@@ -77,3 +77,38 @@ where
         fail(inp)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use nom::{branch::alt, bytes::complete::tag};
+
+    use super::*;
+
+    #[test]
+    fn test_find_next() {
+        let src = "foovrfs barand more";
+        let (rest, res) = find_next(tag("bar"))(src).unwrap();
+        assert_eq!(res, "bar");
+        assert_eq!(rest, "and more");
+        assert!(find_next(tag("foo"))("haystack with no match").is_err());
+    }
+
+    #[test]
+    fn test_find_all() {
+        let src = "needle fskjnfonwofinwfeneedlekfsdond;nsdf;ondsfneedlefsmfok";
+        let (rest, found) = find_all(tag::<&str, &str, ()>("needle"))(src).unwrap();
+        assert_eq!(found, vec!["needle", "needle", "needle"]);
+        assert_eq!(rest, "");
+    }
+
+    #[test]
+    fn test_find_many_till() {
+        let src = "abcdefsba bababaaaaabbbbbabababab";
+        let (rest, (found, end)) =
+            find_many_till(alt((tag("a"), tag("b"))), tag("baba"), src).unwrap();
+        assert_eq!(found, vec!["a", "b", "b", "a"]);
+        assert_eq!(end, "baba");
+        assert_eq!(rest, "baaaaabbbbbabababab");
+        assert!(find_many_till(tag("a"), tag("b"), "aaaaaaaacccccc").is_err());
+    }
+}
